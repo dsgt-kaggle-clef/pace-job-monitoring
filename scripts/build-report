@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -ex
+
+usage="Usage: $0 <log_path> <output_path> [overwrite]"
+log_path=${1?$usage}
+output_path=${2?$usage}
+overwrite=${3:-false}
+
+# if output exists, skip
+if [[ -e $output_path && $overwrite != "true" ]]; then
+    echo "Output already exists, skipping."
+    exit 0
+fi
+
+mkdir -p ~/scratch/apptainer/cache
+export APPTAINER_CACHEDIR=$(realpath ~/scratch/apptainer/cache)
+cleanup() { 
+    rm -f report-generator/static/logs
+    rm -f report-generator/static/manifest.json
+}
+trap cleanup EXIT
+
+
+# link the log directory into the current working directory
+ln -s $log_path report-generator/static/logs
+
+# generate the manifest
+python report-generator/generate-manifest.py
+
+apptainer exec --writable-tmpfs docker://node:latest bash -c "
+    cd report-generator && npm install && npm run build
+"
+
+# copy the report out to the output path
+mkdir -p $(dirname $output_path)
+rm -rf $output_path
+mv report-generator/build $output_path
