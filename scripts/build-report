@@ -15,23 +15,23 @@ fi
 mkdir -p ~/scratch/apptainer/cache
 export APPTAINER_CACHEDIR=$(realpath ~/scratch/apptainer/cache)
 cleanup() { 
-    rm -f report-generator/static/logs
-    rm -f report-generator/static/manifest.json
+    rm -f report_generator/static/logs
+    rm -f report-report_generator/static/manifest.json
 }
 trap cleanup EXIT
 
 
 # link the log directory into the current working directory
-ln -s $log_path report-generator/static/logs
+ln -s $log_path report_generator/static/logs
 
 # generate the manifest
-python report-generator/generate-manifest.py
+python report_generator/generate-manifest.py
 
 apptainer exec --writable-tmpfs docker://node:latest bash -c "
-    cd report-generator && npm install && npm run build
+    cd report_generator && npm install && npm run build
 "
 
 # copy the report out to the output path
 mkdir -p $(dirname $output_path)
 rm -rf $output_path
-mv report-generator/build $output_path
+mv report_generator/build $output_path
